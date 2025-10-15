@@ -160,3 +160,40 @@ func (e *ExternalServiceError) Message() string {
 func NewExternalServiceError(message string, cause error) *ExternalServiceError {
 	return &ExternalServiceError{message: message, cause: cause}
 }
+
+// Error codes
+const (
+	ErrCodeValidation   = "VALIDATION_ERROR"
+	ErrCodeNotFound     = "NOT_FOUND"
+	ErrCodeUnauthorized = "UNAUTHORIZED"
+	ErrCodeForbidden    = "FORBIDDEN"
+	ErrCodeConflict     = "CONFLICT"
+	ErrCodeInternal     = "INTERNAL_ERROR"
+)
+
+// Error represents a structured error
+type Error struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details string `json:"details"`
+}
+
+func (e *Error) Error() string {
+	return fmt.Sprintf("[%s] %s: %s", e.Code, e.Message, e.Details)
+}
+
+// NewError creates a new structured error
+func NewError(code, message, details string) *Error {
+	return &Error{
+		Code:    code,
+		Message: message,
+		Details: details,
+	}
+}
+
+// ErrorResponse represents an API error response
+type ErrorResponse struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details string `json:"details"`
+}
