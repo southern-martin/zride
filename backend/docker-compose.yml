@@ -79,10 +79,58 @@ services:
     networks:
       - zride-network
 
-  # API Gateway (Nginx)
-  api-gateway:
+  # Trip Service
+  trip-service:
+    build:
+      context: ./services/trip-service
+      dockerfile: Dockerfile
+    container_name: zride-trip-service
+    ports:
+      - "8083:8083"
+    environment:
+      - PORT=8083
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=zride_user
+      - DB_PASSWORD=zride_password
+      - DB_NAME=zride_trips
+      - JWT_SECRET=your_jwt_secret_key_here_make_it_long_and_secure
+      - AUTH_SERVICE_URL=http://auth-service:8081
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - LOG_LEVEL=info
+    depends_on:
+      - postgres
+      - redis
+      - auth-service
+    networks:
+      - zride-network
+
+  # AI Matching Service
+  ai-matching-service:
+    build: ./services/ai-matching-service
+    container_name: zride-ai-matching
+    ports:
+      - "8084:8084"
+    environment:
+      - DATABASE_URL=postgres://zride_user:zride_password@postgres:5432/zride_ai_matching?sslmode=disable
+      - REDIS_URL=redis:6379
+      - PORT=8084
+      - LOG_LEVEL=info
+      - AUTH_SERVICE_URL=http://auth-service:8080
+      - USER_SERVICE_URL=http://user-service:8081
+      - TRIP_SERVICE_URL=http://trip-service:8083
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - zride-network
+    restart: unless-stopped
+
+  # API Gateway
+  nginx-gateway:
     image: nginx:alpine
-    container_name: zride-api-gateway
+    container_name: zride-gateway
     ports:
       - "80:80"
       - "443:443"
@@ -92,6 +140,8 @@ services:
     depends_on:
       - auth-service
       - user-service
+      - trip-service
+      - ai-matching-service
     networks:
       - zride-network
 
