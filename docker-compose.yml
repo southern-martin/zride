@@ -1,0 +1,194 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: zride-postgres
+    environment:
+      POSTGRES_DB: zride
+      POSTGRES_USER: zride_user
+      POSTGRES_PASSWORD: zride_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zride_user -d zride"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache
+  redis:
+    image: redis:6-alpine
+    container_name: zride-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MongoDB (Optional - for logs and AI training data)
+  mongodb:
+    image: mongo:5
+    container_name: zride-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin_password
+      MONGO_INITDB_DATABASE: zride_logs
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway
+  api-gateway:
+    build: ./backend/api-gateway
+    container_name: zride-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - ENV=development
+      - REDIS_URL=redis://redis:6379
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - USER_SERVICE_URL=http://user-service:8002
+      - TRIP_SERVICE_URL=http://trip-service:8003
+      - MATCHING_SERVICE_URL=http://matching-service:8004
+      - PAYMENT_SERVICE_URL=http://payment-service:8005
+    depends_on:
+      - redis
+      - auth-service
+      - user-service
+      - trip-service
+      - matching-service
+      - payment-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Auth Service
+  auth-service:
+    build: ./backend/services/auth-service
+    container_name: zride-auth-service
+    ports:
+      - "8001:8001"
+    environment:
+      - ENV=development
+      - DB_URL=postgres://zride_user:zride_password@postgres:5432/zride?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your_jwt_secret_key_here
+      - ZALO_APP_ID=your_zalo_app_id
+      - ZALO_APP_SECRET=your_zalo_app_secret
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # User Service
+  user-service:
+    build: ./backend/services/user-service
+    container_name: zride-user-service
+    ports:
+      - "8002:8002"
+    environment:
+      - ENV=development
+      - DB_URL=postgres://zride_user:zride_password@postgres:5432/zride?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Trip Service
+  trip-service:
+    build: ./backend/services/trip-service
+    container_name: zride-trip-service
+    ports:
+      - "8003:8003"
+    environment:
+      - ENV=development
+      - DB_URL=postgres://zride_user:zride_password@postgres:5432/zride?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # AI Matching Service
+  matching-service:
+    build: ./backend/services/matching-service
+    container_name: zride-matching-service
+    ports:
+      - "8004:8004"
+    environment:
+      - ENV=development
+      - DB_URL=postgres://zride_user:zride_password@postgres:5432/zride?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - MONGODB_URL=mongodb://admin:admin_password@mongodb:27017/zride_logs?authSource=admin
+    depends_on:
+      - postgres
+      - redis
+      - mongodb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Payment Service
+  payment-service:
+    build: ./backend/services/payment-service
+    container_name: zride-payment-service
+    ports:
+      - "8005:8005"
+    environment:
+      - ENV=development
+      - DB_URL=postgres://zride_user:zride_password@postgres:5432/zride?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - ZALOPAY_APP_ID=your_zalopay_app_id
+      - ZALOPAY_KEY1=your_zalopay_key1
+      - ZALOPAY_KEY2=your_zalopay_key2
+      - ZALOPAY_ENDPOINT=https://sb-openapi.zalopay.vn/v2/create
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
+  mongodb_data:
+
+networks:
+  default:
+    name: zride-network
