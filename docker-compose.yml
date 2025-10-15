@@ -65,7 +65,7 @@ services:
       - USER_SERVICE_URL=http://user-service:8002
       - TRIP_SERVICE_URL=http://trip-service:8003
       - MATCHING_SERVICE_URL=http://matching-service:8004
-      - PAYMENT_SERVICE_URL=http://payment-service:8005
+      - PAYMENT_SERVICE_URL=http://payment-service:8004
     depends_on:
       - redis
       - auth-service
@@ -166,7 +166,7 @@ services:
     build: ./backend/services/payment-service
     container_name: zride-payment-service
     ports:
-      - "8005:8005"
+      - "8005:8004"
     environment:
       - ENV=development
       - DB_URL=postgres://zride_user:zride_password@postgres:5432/zride?sslmode=disable
