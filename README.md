@@ -1,13 +1,142 @@
-# 🚗 ZRide - Zalo Ride Sharing Platform
+# Zride - Vietnamese Ride-Sharing Platform
 
-## 📖 Project Overview
-ZRide is a Zalo Mini App that connects drivers with empty return trips to passengers needing rides on the same routes. The platform leverages Zalo's ecosystem for seamless user experience and payment integration.
+A comprehensive ride-sharing platform built with microservices architecture, specifically designed for the Vietnamese market with Zalo integration.
 
-## 🎯 Key Features
-- **Driver-Passenger Matching**: AI-powered route matching for optimal ride sharing
-- **Zalo Integration**: Native integration with Zalo OA for messaging and authentication
-- **Payment Processing**: ZaloPay integration for secure transactions
-- **Real-time Tracking**: Trip status and location updates
+## � Project Overview
+
+Zride is a modern ride-sharing platform that connects passengers with drivers across Vietnam. The platform features:
+
+- **Zalo Integration** - Seamless authentication using Zalo OAuth
+- **Microservices Architecture** - Scalable and maintainable service-oriented design
+- **Real-time Matching** - AI-powered driver-passenger matching system
+- **Vietnamese Market Focus** - Localized features and payment methods
+- **Comprehensive Rating System** - Two-way rating for drivers and passengers
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      API Gateway (Nginx)                    │
+│                         Port 80/443                         │
+└─────────────────┬─────────────────────┬─────────────────────┘
+                  │                     │
+        ┌─────────▼──────────┐ ┌───────▼─────────┐
+        │   Auth Service     │ │   User Service  │
+        │     Port 8081      │ │    Port 8082    │
+        │                    │ │                 │
+        │ • JWT Auth         │ │ • User Profiles │
+        │ • Zalo OAuth       │ │ • Vehicle Mgmt  │
+        │ • Token Mgmt       │ │ • Rating System │
+        └────────────────────┘ └─────────────────┘
+                  │                     │
+        ┌─────────▼─────────────────────▼─────────┐
+        │            PostgreSQL Database           │
+        │     Auth DB    │    Users DB    │       │
+        └──────────────────────────────────────────┘
+```
+
+### Services
+
+1. **Auth Service** (`/backend/services/auth-service/`)
+   - JWT token management
+   - Zalo OAuth integration
+   - User authentication and authorization
+   - Password reset and verification
+
+2. **User Service** (`/backend/services/user-service/`)
+   - User profile management
+   - Driver vehicle registration
+   - Rating and review system
+   - File upload handling
+
+3. **Trip Service** (Planned)
+   - Trip booking and management
+   - Real-time tracking
+   - Fare calculation
+   - Payment processing
+
+4. **Matching Service** (Planned)
+   - AI-powered driver matching
+   - Route optimization
+   - Price estimation
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Docker & Docker Compose
+- Go 1.21+ (for development)
+- PostgreSQL 15+ (for local development)
+- Node.js 18+ (for frontend)
+
+### Development Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd zride
+   ```
+
+2. **Start all services with Docker Compose**
+   ```bash
+   cd backend
+   docker-compose up -d
+   ```
+
+3. **Or run individual services locally**
+   
+   **Auth Service:**
+   ```bash
+   cd backend/services/auth-service
+   cp .env.example .env
+   # Edit .env with your configuration
+   make dev
+   ```
+   
+   **User Service:**
+   ```bash
+   cd backend/services/user-service
+   cp .env.example .env
+   # Edit .env with your configuration
+   make dev
+   ```
+
+### Service URLs
+
+- **API Gateway:** http://localhost
+- **Auth Service:** http://localhost:8081
+- **User Service:** http://localhost:8082
+- **Database:** localhost:5432
+
+## 📡 API Documentation
+
+### Authentication Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/register` | Register new user |
+| POST | `/api/v1/auth/login` | User login |
+| POST | `/api/v1/auth/zalo/login` | Zalo OAuth login |
+| POST | `/api/v1/auth/refresh` | Refresh JWT token |
+| POST | `/api/v1/auth/logout` | User logout |
+| POST | `/api/v1/auth/forgot-password` | Request password reset |
+| POST | `/api/v1/auth/reset-password` | Reset password |
+
+### User Management Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/users/profile` | Create user profile |
+| GET | `/api/v1/users/profile` | Get user profile |
+| PUT | `/api/v1/users/profile` | Update user profile |
+| DELETE | `/api/v1/users/profile` | Delete user profile |
+| POST | `/api/v1/users/profile/avatar` | Upload avatar |
+| GET | `/api/v1/users/vehicles` | Get user vehicles |
+| POST | `/api/v1/users/vehicles` | Add vehicle |
+| PUT | `/api/v1/users/vehicles/:id` | Update vehicle |
+| DELETE | `/api/v1/users/vehicles/:id` | Delete vehicle |
+| GET | `/api/v1/users/ratings` | Get user ratings |
+| POST | `/api/v1/users/ratings` | Create rating |
 - **Rating System**: Driver and passenger rating for quality assurance
 
 ## 🏗️ Architecture
